@@ -1,0 +1,137 @@
+<!-- coordinates.html -->
+{% csrf_token %}
+<html>
+  <head>
+    <title>Mouse Coordinates</title>
+    <style>
+      #rectangle-zone {
+        width: 900px;
+        height: 450px;
+        background-color: lightblue;
+        border: 1px solid black;
+        position: relative;
+        cursor: pointer; /* Change cursor to pointer when hovering over the zone */
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Select Mouse Coordinates</h1>
+    <input type="range" id="x-slider" min="0" max="1800" value="0" step="5">
+    <input type="range" id="y-slider" min="0" max="900" value="0" step="5">
+
+    <h1>Select Mouse Coordinates</h1>
+    <div id="rectangle-zone" onclick="sendCoordinates(event)">
+      Click within this rectangle to select coordinates
+    </div>
+
+    <br/><br/><br/>
+    <button onclick="sendLeftClick()">LEFT CLICK</button>                                    .
+    <button onclick="sendRightClick()">RIGHT CLICK</button>
+
+    <script>
+      const csrftoken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+      ).value;
+      function sendCoordinates() {
+        var x = document.getElementById("x-slider").value;
+        var y = document.getElementById("y-slider").value;
+        console.log(x);
+        console.log(y);
+        // Send coordinates to server
+        fetch("/send-coordinates/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrftoken,
+          },
+          body: JSON.stringify({ x: x, y: y }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Response:", data);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+      var rectangleZone = document.getElementById("rectangle-zone");
+      var isFetching = false;
+
+      rectangleZone.addEventListener("touchmove", function (event) {
+        event.preventDefault();
+
+        var rect = event.target.getBoundingClientRect();
+        var x = event.touches[0].clientX - rect.left;
+        var y = event.touches[0].clientY - rect.top;
+        console.log("X:", x);
+        console.log("Y:", y);
+
+        // Send coordinates to server
+        if (!isFetching) {
+          isFetching = true;
+          setTimeout(function () {
+            // Send coordinates to server
+            fetch("/send-coordinates/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken,
+              },
+              body: JSON.stringify({ x: x * 2, y: y * 2 }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                console.log("Response:", data);
+                // Optional: You can handle the response from the server if needed
+              })
+              .catch((error) => {
+                console.error("Error:", error);
+                // Optional: You can handle errors if the request fails
+              })
+              .finally(() => {
+                isFetching = false;
+              });
+          }, 0); // Throttle fetch requests to 100 milliseconds
+        }
+      });
+
+      function sendLeftClick() {
+        fetch("/left_click/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrftoken,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Response:", data);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function sendRightClick() {
+        fetch("/right_click/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrftoken,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Response:", data);
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+
+      document.getElementById('x-slider').addEventListener('input', sendCoordinates);
+      document.getElementById('y-slider').addEventListener('input', sendCoordinates);
+    </script>
+  </body>
+</html>
